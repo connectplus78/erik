@@ -1,4 +1,4 @@
-import json
+İmport json
 import os
 import re
 import base64
@@ -84,8 +84,7 @@ def extract_movie_data(film_url):
 
         iframe_linki = None
         scx_match = re.search(r'(?:scx|data)\s*=\s*(\{.*?\});', req.text)
-
-if scx_match:
+        if scx_match:
             encoded_strings = re.findall(r"'(.*?)'", str(json.loads(scx_match.group(1))))
             for code in encoded_strings:
                 dec = decode_iframe(code)
@@ -171,5 +170,5 @@ def bot_calistir():
     else:
         print("\nYeni film bulunamadı, sistem güncel.")
 
-if name == "main":
+if __name__ == "__main__":
     bot_calistir()
