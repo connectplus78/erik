@@ -9,7 +9,7 @@ from curl_cffi import requests
 
 BASE_URL = "https://www.fullhdfilmizlesene.life"
 DB_FILE = "veritabani.json"
-HEDEF_FILM_SAYISI = 1000
+HEDEF_FILM_SAYISI = 5000
 
 KATEGORILER = {
     "En Çok İzlenen Filmler": "/en-cok-izlenen-filmler-izle-hd/",
