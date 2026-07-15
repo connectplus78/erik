@@ -29,6 +29,14 @@
     ],
     "filmler": [
         {
+            "id": 282,
+            "baslik": "Usher: Paris'te Randevu",
+            "kategori": "Belgeseller",
+            "afis": "https://img.fullhdfilmizlesene.life/poster/film/usher-paris-te-randevu-usher-rendezvous-in-paris-52284.jpg",
+            "aciklama": "Usher’ın Las Vegas’taki sahne döneminin enerjisini Paris Moda Haftası atmosferiyle buluşturan bu film, sanatçının hem büyük şov tarafına hem de sahne dışındaki daha sakin anlarına bakıyor. Yeah!, My Boo ve Love In This Club gibi bilinen parçalar, Paris’e özel hazırlanan kostümler, ışık düzenleri ve görsel efektlerle yeniden sahneleniyor. Kamera yalnızca kalabalığın coşkusuna ya da gösterinin parlak tarafına takılıp kalmıyor; prova sürecine, ekip çalışmasına ve Usher’ın sahneye çıkmadan önceki hazırlıklarına da yer veriyor. Bu sayede ortaya, sıradan bir konser kaydından biraz daha fazlası çıkıyor. Müzik, moda ve performansın kesiştiği bu yapım, Usher’ı sevenler için tanıdık ama yine de taze bir seyir sunuyor.",
+            "iframe": "https://rapidvid.net/vod/v1x2b9199f2"
+        },
+        {
             "id": 281,
             "baslik": "Bridget Jones: Onun İçin Çıldırıyor",
             "kategori": "Komedi Filmleri",
