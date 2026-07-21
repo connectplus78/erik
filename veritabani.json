@@ -29,6 +29,14 @@
     ],
     "filmler": [
         {
+            "id": 287,
+            "baslik": "Baş Belası",
+            "kategori": "Komedi Filmleri",
+            "afis": "https://img.fullhdfilmizlesene.nz/poster/film/fullhd-bas-belasi-tammy-film-izle.jpg",
+            "aciklama": "Tammy, hamburgercide geçen sıradan ve bunaltıcı bir vardiyanın ardından hayatının iyice raydan çıktığını fark eder. Önce arabasını hurdaya çevirir, sonra işinden olur; eve döndüğünde ise kocasının onu aldattığını öğrenir. Bir anda bulunduğu yerden uzaklaşmak ister ama ne cebinde doğru düzgün para vardır ne de kullanabileceği bir araç. Bu noktada devreye büyükannesi Pearl girer. Pearl’in arabası, bir miktar parası ve yıllardır görmek istediği Niagara Şelalesi planı vardır; yanında da içkiye biraz fazla düşkün, lafını esirgemeyen bir karakter getirir. Tammy’nin hayal ettiği kaçış kesinlikle bu değildir. Yine de film, bu tuhaf ikilinin çatışmaları ve beklenmedik yakınlaşmaları üzerinden, insanın bazen en plansız anlarda kendine gelmesini anlatıyor.",
+            "iframe": "https://rapidvid.net/vod/v1x84109b23"
+        },
+        {
             "id": 286,
             "baslik": "Anka'nın uyanışı",
             "kategori": "Aksiyon Filmleri",
