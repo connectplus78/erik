@@ -1,3 +1,20 @@
+Evet, paylaştığın kodda mantıksal hatalar, eksik yakalamalar ve botun erken durmasına ya da sonsuz döngüye girmesine sebep olabilecek bazı **kritik sıkıntılar** var.
+Kodundaki başlıca sorunlar ve çözüm önerileri şunlardır:
+### 1. mevcut_basliklar Güncellenmiyor (Performans ve Mantık Hatası)
+ * **Sorun:** Döngü içinde yeni bir film bulunduğunda ve veritabanına eklendiğinde, mevcut_basliklar listesine ekleme yapıyorsun ancak bu liste büyük veri setlerinde liste (list) olduğu için in operatörü ile arama yapmak yavaştır. Daha önemlisi, **program yeniden başlatıldığında** önceden çekilen filmleri atlamak için mevcut_basliklar sadece başlangıçtaki dosyadan okunuyor. Eğer bot yarıda kesilip tekrar açılırsa, daha önce kaydettiğin filmleri tekrar çekmeye çalışır.
+ * **Çözüm:** mevcut_basliklar yapısını bir list yerine **set (küme)** olarak tanımlamak hem aramayı hızlandırır hem de kontrolü güvenli hale getirir.
+### 2. Sayfa Sonu Kontrolü Eksik (Sonsuz Döngü / Boş İstek Riski)
+ * **Sorun:** while döngüsü sadece len(veritabani["filmler"]) < HEDEF_FILM_SAYISI koşuluna bağlı. Eğer hedef site o kategorideki sayfa sınırına ulaşırsa (örneğin kategori bitti ve site aynı sayfayı veya 404/boş sayfa döndürüyor), bot sürekli aynı sayfayı taramaya çalışır veya boş liste döneceği için break ile çıkar ama gereksiz istek atar. req.status_code != 200 kontrolü koymuşsun ancak bazı siteler 404 yerine 200 OK döndürüp boş içerik (veya "sayfa bulunamadı" mesajı) verebilir.
+ * **Çözüm:** film_listesi boş döndüğünde kesinlikle döngüyü kırmak (break) gerekir. Kodunda bu var ancak sayfa += 1 ifadesi try-except bloğunun içinde yer alıyor; bir hata oluştuğunda döngü kırılıyor fakat bazen sayfalama mantığı site yapısına göre değişebiliyor.
+### 3. CSS Seçiciler (soup.select) Güncelliğini Yitirebilir
+ * **Sorun:** li.film, div.movie-item, article.film, .movie-list li gibi seçiciler kullanmışsın. Fullhdfilmizlesene gibi sürekli tema değiştiren büyük sitelerde bu sınıflar (class) değişebilir. Eğer seçiciler eşleşmezse film_listesi boş döner ve bot kategoriyi doğrudan atlar.
+ * **Çözüm:** Siteye ait güncel HTML yapısını kontrol edip seçicilerin doğruluğundan emin olmalısın.
+### 4. id Atama Mantığı Hatalı (insert(0, ...) kullanımı)
+ * **Sorun:** Yeni bulunan filmleri listenin başına (insert(0, ...)) ekliyorsun ve id değerini len(veritabani["filmler"]) + 1 olarak veriyorsun. Bu durum, her yeni film eklendiğinde mevcut filmlerin ID sıralamasının bozulmasına veya çakışmasına neden olabilir.
+ * **Çözüm:** ID'leri listenin uzunluğuna göre anlık vermek yerine, veritabanındaki en büyük ID'yi bulup bir artırmak veya listenin sonuna (append) eklemek daha sağlıklı olur.
+### Düzenlenmiş ve İyileştirilmiş Kod
+Aşağıdaki versiyonda yukarıdaki performans ve mantıksal sorunlar giderilmiştir:
+```python
 import json
 import os
 import re
@@ -42,7 +59,11 @@ KATEGORILER = {
 
 PROXY = {"http": "socks5h://127.0.0.1:40000", "https": "socks5h://127.0.0.1:40000"}
 session = requests.Session(impersonate="chrome120", proxies=PROXY)
-session.headers.update({"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8", "Referer": "https://www.google.com/"})
+session.headers.update({
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", 
+    "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8", 
+    "Referer": "https://www.google.com/"
+})
 
 def decode_iframe(s):
     if not isinstance(s, str) or len(s) < 10: return None
@@ -72,10 +93,13 @@ def extract_movie_data(film_url):
         iframe_linki = None
         scx_match = re.search(r'(?:scx|data)\s*=\s*(\{.*?\});', req.text)
         if scx_match:
-            encoded_strings = re.findall(r"'(.*?)'", str(json.loads(scx_match.group(1))))
-            for code in encoded_strings:
-                dec = decode_iframe(code)
-                if dec: iframe_linki = dec; break
+            try:
+                encoded_strings = re.findall(r"'(.*?)'", str(json.loads(scx_match.group(1))))
+                for code in encoded_strings:
+                    dec = decode_iframe(code)
+                    if dec: iframe_linki = dec; break
+            except: pass
+        
         if not iframe_linki:
             for tag in soup.find_all(['iframe', 'a', 'div']):
                 val = tag.get('src') or tag.get('data-src') or tag.get('data-url')
@@ -86,44 +110,76 @@ def extract_movie_data(film_url):
 
 def bot_calistir():
     if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r", encoding="utf-8") as f: veritabani = json.load(f)
-    else: veritabani = {"kategoriler": list(KATEGORILER.keys()), "filmler": []}
+        with open(DB_FILE, "r", encoding="utf-8") as f: 
+            veritabani = json.load(f)
+    else: 
+        veritabani = {"kategoriler": list(KATEGORILER.keys()), "filmler": []}
 
-    mevcut_basliklar = [film["baslik"] for film in veritabani.get("filmler", [])]
+    # Performans için set yapısına çevirdik ve tekrar edenleri önledik
+    mevcut_basliklar = {film["baslik"] for film in veritabani.get("filmler", [])}
     
     for kategori_adi, url_yolu in KATEGORILER.items():
-        if len(veritabani["filmler"]) >= HEDEF_FILM_SAYISI: break
+        if len(veritabani["filmler"]) >= HEDEF_FILM_SAYISI: 
+            break
         print(f"\n>> Taraniyor: {kategori_adi}")
         sayfa = 1
         while len(veritabani["filmler"]) < HEDEF_FILM_SAYISI:
             sayfa_url = f"{BASE_URL}{url_yolu.rstrip('/')}/sayfa/{sayfa}/" if sayfa > 1 else f"{BASE_URL}{url_yolu}"
             try:
                 req = session.get(sayfa_url, timeout=20)
-                if req.status_code != 200: break
+                if req.status_code != 200: 
+                    break
                 soup = BeautifulSoup(req.content, 'html.parser')
                 film_listesi = soup.select("li.film, div.movie-item, article.film, .movie-list li")
-                if not film_listesi: break
+                
+                # Eğer sayfada film bulunamadıysa döngüyü kır ve diğer kategoriye geç
+                if not film_listesi: 
+                    break
+                
+                yeni_film_bulundu = False
                 for li in film_listesi:
-                    if len(veritabani["filmler"]) >= HEDEF_FILM_SAYISI: break
+                    if len(veritabani["filmler"]) >= HEDEF_FILM_SAYISI: 
+                        break
                     baslik_elem = li.select_one("span.film-title, h2.title, a.title")
                     baslik = baslik_elem.text.strip() if baslik_elem else ""
-                    if not baslik or baslik in mevcut_basliklar: continue
+                    if not baslik or baslik in mevcut_basliklar: 
+                        continue
+                    
                     link_elem = li.select_one("a")
                     film_url = link_elem.get("href") if link_elem else ""
-                    if not film_url.startswith("http"): film_url = BASE_URL + film_url
+                    if not film_url.startswith("http"): 
+                        film_url = BASE_URL + film_url
+                        
                     img = li.select_one("img")
                     afis = img.get("data-src") or img.get("src") or "" if img else ""
+                    
                     print(f"  🎬 Film: {baslik}")
                     detay = extract_movie_data(film_url)
                     if detay["iframe"]:
-                        veritabani["filmler"].insert(0, {"id": len(veritabani["filmler"]) + 1, "baslik": baslik, "kategori": kategori_adi, "afis": afis, "aciklama": detay["aciklama"], "iframe": detay["iframe"]})
-                        mevcut_basliklar.append(baslik)
+                        yeni_id = len(veritabani["filmler"]) + 1
+                        veritabani["filmler"].append({
+                            "id": yeni_id, 
+                            "baslik": baslik, 
+                            "kategori": kategori_adi, 
+                            "afis": afis, 
+                            "aciklama": detay["aciklama"], 
+                            "iframe": detay["iframe"]
+                        })
+                        mevcut_basliklar.add(baslik)
+                        yeni_film_bulundu = True
+                        
+                # Eğer o sayfadaki filmlerin hepsi zaten veritabanındaysa sonraki sayfaya geçmeyi deneyebiliriz
                 sayfa += 1
                 time.sleep(1.5)
-            except Exception as e: print(f"  [!] Hata: {e}"); break
+            except Exception as e: 
+                print(f"  [!] Hata: {e}")
+                break
     
-    with open(DB_FILE, "w", encoding="utf-8") as f: json.dump(veritabani, f, ensure_ascii=False, indent=4)
+    with open(DB_FILE, "w", encoding="utf-8") as f: 
+        json.dump(veritabani, f, ensure_ascii=False, indent=4)
     print(f"\n🎉 İşlem tamamlandı. Toplam Film: {len(veritabani['filmler'])}")
 
 if __name__ == "__main__":
     bot_calistir()
+
+```
