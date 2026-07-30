@@ -11,7 +11,7 @@ async def run_scraper():
         )
         page = await context.new_page()
 
-        target_url = "https://www.hdfilmcehennemi.now/"
+        target_url = "https://www.hdfilmcehennemi.nl/"
         print(f"Bağlanılıyor: {target_url}")
         
         try:
