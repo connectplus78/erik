@@ -1,20 +1,3 @@
-Evet, paylaştığın kodda mantıksal hatalar, eksik yakalamalar ve botun erken durmasına ya da sonsuz döngüye girmesine sebep olabilecek bazı **kritik sıkıntılar** var.
-Kodundaki başlıca sorunlar ve çözüm önerileri şunlardır:
-### 1. mevcut_basliklar Güncellenmiyor (Performans ve Mantık Hatası)
- * **Sorun:** Döngü içinde yeni bir film bulunduğunda ve veritabanına eklendiğinde, mevcut_basliklar listesine ekleme yapıyorsun ancak bu liste büyük veri setlerinde liste (list) olduğu için in operatörü ile arama yapmak yavaştır. Daha önemlisi, **program yeniden başlatıldığında** önceden çekilen filmleri atlamak için mevcut_basliklar sadece başlangıçtaki dosyadan okunuyor. Eğer bot yarıda kesilip tekrar açılırsa, daha önce kaydettiğin filmleri tekrar çekmeye çalışır.
- * **Çözüm:** mevcut_basliklar yapısını bir list yerine **set (küme)** olarak tanımlamak hem aramayı hızlandırır hem de kontrolü güvenli hale getirir.
-### 2. Sayfa Sonu Kontrolü Eksik (Sonsuz Döngü / Boş İstek Riski)
- * **Sorun:** while döngüsü sadece len(veritabani["filmler"]) < HEDEF_FILM_SAYISI koşuluna bağlı. Eğer hedef site o kategorideki sayfa sınırına ulaşırsa (örneğin kategori bitti ve site aynı sayfayı veya 404/boş sayfa döndürüyor), bot sürekli aynı sayfayı taramaya çalışır veya boş liste döneceği için break ile çıkar ama gereksiz istek atar. req.status_code != 200 kontrolü koymuşsun ancak bazı siteler 404 yerine 200 OK döndürüp boş içerik (veya "sayfa bulunamadı" mesajı) verebilir.
- * **Çözüm:** film_listesi boş döndüğünde kesinlikle döngüyü kırmak (break) gerekir. Kodunda bu var ancak sayfa += 1 ifadesi try-except bloğunun içinde yer alıyor; bir hata oluştuğunda döngü kırılıyor fakat bazen sayfalama mantığı site yapısına göre değişebiliyor.
-### 3. CSS Seçiciler (soup.select) Güncelliğini Yitirebilir
- * **Sorun:** li.film, div.movie-item, article.film, .movie-list li gibi seçiciler kullanmışsın. Fullhdfilmizlesene gibi sürekli tema değiştiren büyük sitelerde bu sınıflar (class) değişebilir. Eğer seçiciler eşleşmezse film_listesi boş döner ve bot kategoriyi doğrudan atlar.
- * **Çözüm:** Siteye ait güncel HTML yapısını kontrol edip seçicilerin doğruluğundan emin olmalısın.
-### 4. id Atama Mantığı Hatalı (insert(0, ...) kullanımı)
- * **Sorun:** Yeni bulunan filmleri listenin başına (insert(0, ...)) ekliyorsun ve id değerini len(veritabani["filmler"]) + 1 olarak veriyorsun. Bu durum, her yeni film eklendiğinde mevcut filmlerin ID sıralamasının bozulmasına veya çakışmasına neden olabilir.
- * **Çözüm:** ID'leri listenin uzunluğuna göre anlık vermek yerine, veritabanındaki en büyük ID'yi bulup bir artırmak veya listenin sonuna (append) eklemek daha sağlıklı olur.
-### Düzenlenmiş ve İyileştirilmiş Kod
-Aşağıdaki versiyonda yukarıdaki performans ve mantıksal sorunlar giderilmiştir:
-```python
 import json
 import os
 import re
