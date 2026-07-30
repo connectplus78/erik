@@ -7,7 +7,7 @@ import time
 from bs4 import BeautifulSoup
 from curl_cffi import requests
 
-BASE_URL = "https://www.fullhdfilmizlesene.mx"
+BASE_URL = "https://www.fullhdfilmizlesene.life"
 DB_FILE = "veritabani.json"
 HEDEF_FILM_SAYISI = 5000
 
