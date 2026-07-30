@@ -1,0 +1,35 @@
+name: HD Film Bot
+
+on:
+  schedule:
+    - cron: '0 8 * * *' # Her gün Türkiye saati ile sabah 08:00'de çalışır
+  workflow_dispatch: # Manuel olarak 'Actions' sekmesinden çalıştırabilmeyi sağlar
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repoyu Kopyala (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Python Kurulumu
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Bağımlılıkları Yükle
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Botu Çalıştır
+        run: python scraper.py
+
+      - name: Çıktı Dosyasını Güncelle ve Kaydet
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add films_output.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Otomatik film verileri güncellendi [skip ci]" && git push)
